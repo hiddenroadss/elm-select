@@ -140,6 +140,8 @@ type Msg item
       -- CLEAR BUTTON
     | ClearButtonMouseDowned (Variant item)
     | ClearButtonKeyDowned (Variant item)
+      -- DROPDOWN CHEVRON
+    | DropdownToggle
       -- HEADLESS
     | HeadlessMsg HeadlessMsg
       --
@@ -196,6 +198,7 @@ type Action item
     | FocusSet
     | Focus
     | Blur
+    | MenuClose
 
 
 {-| -}
@@ -1217,7 +1220,7 @@ selections, or escape, or clicking away will not close it.
 -}
 keepMenuOpen : Bool -> State -> State
 keepMenuOpen pred (State state_) =
-    State { state_ | menuOpen = True, keepOpen = pred }
+    State { state_ | menuOpen = pred, keepOpen = pred }
 
 
 {-| Opt in to a Javascript optimization.
@@ -2162,6 +2165,13 @@ update msg ((State state_) as wrappedState) =
         SetMouseMenuNavigation ->
             ( Nothing, State { state_ | menuNavigation = Mouse }, Cmd.none )
 
+        DropdownToggle ->
+            if state_.keepOpen then
+                ( Just MenuClose, State state_, Cmd.none )
+
+            else
+                ( Nothing, State { state_ | menuOpen = not state_.menuOpen, activeTargetIndex = 0 }, Cmd.none )
+
         ClearButtonMouseDowned variant ->
             case variant of
                 CustomVariant (SingleMenu _) ->
@@ -2519,7 +2529,7 @@ view (Config config) =
                                 (Styles.getControlLoadingIndicatorColor viewData.ctrlStyles)
                             )
                         , indicatorSeparator viewData.ctrlStyles
-                        , viewDropdownIndicator (ViewDropdownIndicatorData False viewData.ctrlStyles)
+                        , viewDropdownIndicator (ViewDropdownIndicatorData False viewData.ctrlStyles False)
                         ]
                     ]
                 ]
@@ -2846,7 +2856,7 @@ viewCustomControl data =
                 )
             , indicatorSeparator data.controlStyles
             , viewDropdownIndicator
-                (ViewDropdownIndicatorData data.disabled data.controlStyles)
+                (ViewDropdownIndicatorData data.disabled data.controlStyles True)
             ]
         ]
 
@@ -2880,13 +2890,27 @@ viewInputWrapper dsbl =
 type alias ViewDropdownIndicatorData =
     { disabled : Bool
     , controlStyles : Styles.ControlConfig
+    , sendMsg : Bool
     }
 
 
-viewDropdownIndicator : ViewDropdownIndicatorData -> Html msg
+viewDropdownIndicator : ViewDropdownIndicatorData -> Html (Msg item)
 viewDropdownIndicator data =
+    let
+        withMsg =
+            if data.sendMsg then
+                [ custom "mousedown" <|
+                    Decode.map (\msg -> { message = msg, stopPropagation = True, preventDefault = True }) <|
+                        Decode.succeed DropdownToggle
+                ]
+
+            else
+                []
+    in
     div
-        [ StyledAttribs.css indicatorContainerStyles ]
+        (StyledAttribs.css indicatorContainerStyles
+            :: withMsg
+        )
         [ dropdownIndicator data.controlStyles data.disabled
         ]
 
