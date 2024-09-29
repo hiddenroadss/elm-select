@@ -62,6 +62,13 @@ update msg model =
                         Just Select.Clear ->
                             ( [], selectState )
 
+                        Just Select.Focus ->
+                            let
+                                _ =
+                                    Debug.log "FOCUS" ()
+                            in
+                            ( model.selectedItems, selectState )
+
                         Just Select.Blur ->
                             let
                                 updatedState =
@@ -73,7 +80,7 @@ update msg model =
                             in
                             ( model.selectedItems, updatedState )
 
-                        Just Select.MenuClose ->
+                        Just (Select.MenuToggle Select.MenuClose) ->
                             ( model.selectedItems, selectState |> Select.keepMenuOpen False )
 
                         _ ->

@@ -10,6 +10,7 @@ module Select exposing
     , multiNative
     , disabled, labelledBy, ariaDescribedBy, loading, loadingMessage
     , jsOptimize
+    , ToggleAction(..)
     )
 
 {-| Select items from a menu list.
@@ -198,7 +199,12 @@ type Action item
     | FocusSet
     | Focus
     | Blur
-    | MenuClose
+    | MenuToggle ToggleAction
+
+
+type ToggleAction
+    = MenuClose
+    | MenuOpen
 
 
 {-| -}
@@ -2025,6 +2031,22 @@ update msg ((State state_) as wrappedState) =
                                         , Cmd.batch [ cmdWithOpenMenu, internalFocus idString OnInputFocused ]
                                         )
 
+                        Internal.DropdownMousedown ->
+                            case variant of
+                                SingleMenu _ ->
+                                    ( { state_ | initialAction = Internal.DropdownMousedown }, Cmd.none )
+
+                                _ ->
+                                    if state_.menuOpen then
+                                        ( { stateWithClosedMenu | initialAction = Internal.NothingMousedown }
+                                        , Cmd.batch [ cmdWithClosedMenu, internalFocus idString OnInputFocused ]
+                                        )
+
+                                    else
+                                        ( { stateWithOpenMenu | initialAction = Internal.NothingMousedown }
+                                        , Cmd.batch [ cmdWithOpenMenu, internalFocus idString OnInputFocused ]
+                                        )
+
                         _ ->
                             if state_.menuOpen then
                                 ( stateWithClosedMenu, Cmd.batch [ cmdWithClosedMenu, internalFocus idString OnInputFocused ] )
@@ -2166,11 +2188,25 @@ update msg ((State state_) as wrappedState) =
             ( Nothing, State { state_ | menuNavigation = Mouse }, Cmd.none )
 
         DropdownToggle ->
-            if state_.keepOpen then
-                ( Just MenuClose, State state_, Cmd.none )
+            if state_.menuOpen then
+                if state_.keepOpen then
+                    case state_.controlUiFocused of
+                        Just Internal.ControlInput ->
+                            ( Nothing, wrappedState, Cmd.none )
+
+                        _ ->
+                            ( Nothing, wrappedState, internalFocus idString OnInputFocused )
+
+                else
+                    case state_.controlUiFocused of
+                        Just Internal.ControlInput ->
+                            ( Just (MenuToggle MenuClose), State { state_ | menuOpen = False, activeTargetIndex = 0 }, Cmd.none )
+
+                        _ ->
+                            ( Just (MenuToggle MenuClose), State { state_ | menuOpen = False, activeTargetIndex = 0 }, internalFocus idString OnInputFocused )
 
             else
-                ( Nothing, State { state_ | menuOpen = not state_.menuOpen, activeTargetIndex = 0 }, Cmd.none )
+                ( Just (MenuToggle MenuOpen), State { state_ | menuOpen = not state_.menuOpen, activeTargetIndex = 0 }, internalFocus idString OnInputFocused )
 
         ClearButtonMouseDowned variant ->
             case variant of
@@ -4326,9 +4362,6 @@ containerClickedMsg data =
 
                                 _ ->
                                     False
-
-                Internal.ContainerMousedown ->
-                    True
 
                 _ ->
                     True

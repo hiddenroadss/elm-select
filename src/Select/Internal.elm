@@ -219,7 +219,8 @@ type UiFocused
 
 
 type InitialAction
-    = MultiItemMousedown Int
+    = DropdownMousedown
+    | MultiItemMousedown Int
     | MenuItemMousedown Int
     | ContainerMousedown
     | NothingMousedown
