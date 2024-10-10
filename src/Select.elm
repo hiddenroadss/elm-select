@@ -2192,7 +2192,7 @@ update msg ((State state_) as wrappedState) =
                 if state_.keepOpen then
                     case state_.controlUiFocused of
                         Just Internal.ControlInput ->
-                            ( Nothing, wrappedState, Cmd.none )
+                            ( Just (MenuToggle MenuClose), wrappedState, Cmd.none )
 
                         _ ->
                             ( Nothing, wrappedState, internalFocus idString OnInputFocused )

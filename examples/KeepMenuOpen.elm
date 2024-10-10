@@ -81,6 +81,10 @@ update msg model =
                             ( model.selectedItems, updatedState )
 
                         Just (Select.MenuToggle Select.MenuClose) ->
+                            let
+                                _ =
+                                    Debug.log "CLOSE" ()
+                            in
                             ( model.selectedItems, selectState |> Select.keepMenuOpen False )
 
                         _ ->
