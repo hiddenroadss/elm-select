@@ -57,7 +57,7 @@ update msg model =
                             ( model.selectedItems ++ [ i ], selectState |> Select.keepMenuOpen True )
 
                         Just (Select.Deselect deletedItems) ->
-                            ( List.filter (\i -> not (List.member i deletedItems)) model.selectedItems, selectState )
+                            ( List.filter (\i -> not (List.member i deletedItems)) model.selectedItems, selectState |> Select.keepMenuOpen True )
 
                         Just Select.Clear ->
                             ( [], selectState )
